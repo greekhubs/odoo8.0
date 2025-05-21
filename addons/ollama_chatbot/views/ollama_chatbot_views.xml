@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="view_ollama_chatbot_page" model="ir.ui.view">
+            <field name="name">Ollama Chatbot</field>
+            <field name="model">ollama_chatbot.history</field>
+            <field name="arch" type="xml">
+                <form string="Ollama Chatbot" create="false" edit="false" delete="false">
+                    <h1>Ollama Chatbot</h1>
+                    <div>
+                        <input type="text" id="chat_query_input" style="width: 80%; padding: 5px;" placeholder="Type your question here..."/>
+                        <button id="send_query_button" style="margin-left: 5px; padding: 5px;" class="oe_highlight">Send</button>
+                    </div>
+                    <div id="chat_history_display" style="margin-top: 10px; border: 1px solid #ccc; min-height: 300px; max-height: 500px; overflow-y: auto; padding: 10px; background-color: #f9f9f9;">
+                        <!-- Chat history will appear here -->
+                    </div>
+                    <script type="text/javascript">
+                        (function() {
+                            // Ensure this script runs after the DOM is fully loaded
+                            openerp.web.WebClient.include({
+                                start: function() {
+                                    this._super.apply(this, arguments);
+                                    var self = this;
+                                    // Delay binding to ensure elements are in DOM, especially in complex views
+                                    setTimeout(function() { self.bind_chat_events(); }, 500);
+                                },
+                                bind_chat_events: function() {
+                                    var send_button = document.getElementById('send_query_button');
+                                    var query_input = document.getElementById('chat_query_input');
+                                    var history_display = document.getElementById('chat_history_display');
+
+                                    if (send_button &amp;&amp; query_input &amp;&amp; history_display) {
+                                        send_button.onclick = function() {
+                                            var query = query_input.value;
+                                            if (!query.trim()) return;
+
+                                            var user_msg_div = document.createElement('div');
+                                            user_msg_div.innerHTML = '<strong>You:</strong> ' + query; // Consider escaping HTML in query
+                                            history_display.appendChild(user_msg_div);
+
+                                            openerp.session.rpc('/ollama_chatbot/chat', {query: query})
+                                                .then(function(result) {
+                                                    var bot_response = (result &amp;&amp; result.response) ? result.response : "No valid response from bot.";
+                                                    var bot_msg_div = document.createElement('div');
+                                                    bot_msg_div.innerHTML = '<strong>Bot:</strong> ' + bot_response; // Consider escaping HTML in bot_response
+                                                    history_display.appendChild(bot_msg_div);
+                                                    history_display.scrollTop = history_display.scrollHeight;
+                                                })
+                                                .fail(function(error) {
+                                                    var error_msg_div = document.createElement('div');
+                                                    var error_message = "Could not reach bot.";
+                                                    if (error &amp;&amp; error.message &amp;&amp; error.data &amp;&amp; error.data.message){
+                                                        error_message += " " + error.data.message;
+                                                    } else if (error &amp;&amp; error.message) {
+                                                        error_message += " " + error.message;
+                                                    }
+                                                    error_msg_div.innerHTML = '<strong>Error:</strong> ' + error_message;
+                                                    history_display.appendChild(error_msg_div);
+                                                    history_display.scrollTop = history_display.scrollHeight;
+                                                    console.error("RPC Error:", error);
+                                                });
+                                            query_input.value = '';
+                                            query_input.focus();
+                                        };
+
+                                        query_input.onkeypress = function(e) {
+                                            if (e.key === 'Enter' || e.keyCode === 13) { // Check for Enter key
+                                                send_button.onclick(); // Trigger send button click
+                                            }
+                                        };
+
+                                    } else {
+                                        console.warn("Chat UI elements not found. Retrying binding...");
+                                        // Retry binding after a short delay if elements are not found
+                                        // This can happen if the script executes before the elements are rendered
+                                        var self_binder = this;
+                                        setTimeout(function() { self_binder.bind_chat_events(); }, 1000);
+                                    }
+                                }
+                            });
+                        })();
+                    </script>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_ollama_chatbot" model="ir.actions.act_window">
+            <field name="name">Ollama Chatbot</field>
+            <field name="res_model">ollama_chatbot.history</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_ollama_chatbot_page"/>
+            <field name="target">main</field>
+            <field name="context">{'default_user_query': 'Hello Ollama!'}</field> <!-- Optional: pre-fill or provide context -->
+        </record>
+
+        <menuitem id="menu_ollama_chatbot_root" name="Ollama Chatbot" sequence="10" web_icon="ollama_chatbot,static/description/icon.png"/>
+        <menuitem id="menu_ollama_chatbot_main" name="Chat" parent="menu_ollama_chatbot_root" action="action_ollama_chatbot" sequence="10"/>
+
+    </data>
+</openerp>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data noupdate="1"> <!-- noupdate="1" to prevent overwriting on module update -->
+        <record id="ollama_api_endpoint" model="ir.config_parameter">
+            <field name="key">ollama_chatbot.api_endpoint</field>
+            <field name="value">http://localhost:11434/api/generate</field>
+        </record>
+    </data>
+</openerp>
