@@ -90,7 +90,7 @@
             <field name="view_type">form</field>
             <field name="view_mode">form</field>
             <field name="view_id" ref="view_ollama_chatbot_page"/>
-            <field name="target">main</field>
+            <field name="target">current</field>
             <field name="context">{'default_user_query': 'Hello Ollama!'}</field> <!-- Optional: pre-fill or provide context -->
         </record>
 
